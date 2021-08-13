@@ -77,10 +77,18 @@ import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -496,17 +504,43 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // BackgroundRenderer.updateDisplayGeometry must be called every frame to update the coordinates
     // used to draw the background camera image.
     backgroundRenderer.updateDisplayGeometry(frame);
-
-    if (camera.getTrackingState() == TrackingState.TRACKING
+    /*try (Image depthImageStore = frame.acquireDepthImage()) {
+        Image.Plane plane = depthImageStore.getPlanes()[0];
+        int format = depthImageStore.getFormat();
+        ByteBuffer buffer = plane.getBuffer().order(ByteOrder.nativeOrder());
+        byte[] data = new byte[buffer.remaining()];
+        buffer.get(data);
+        File mypath=new File(super.getExternalFilesDir("depDir"),Long.toString(lastPointCloudTimestamp)+".txt");
+        Log.d("SAVE", "SAVEFOR: " + super.getExternalFilesDir("depDir") + "   " + Long.toString(lastPointCloudTimestamp)+".txt");
+        Log.d("SAVE", "BUFFERFOR: " + StandardCharsets.UTF_8.decode(buffer).toString());
+        FileChannel fc = new FileOutputStream(mypath).getChannel();
+        fc.write(buffer);
+        fc.close();
+        depthImageStore.close();
+        String s = new String(data, "UTF-8");
+    } catch (NotYetAvailableException e) {
+        // This normally means that depth data is not available yet. This is normal so we will not
+        // spam the logcat with this.
+    } catch (FileNotFoundException e) {
+        e.printStackTrace();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }*/
+    /*if (camera.getTrackingState() == TrackingState.TRACKING
         && (depthSettings.useDepthForOcclusion()
             || depthSettings.depthColorVisualizationEnabled())) {
       try (Image depthImage = frame.acquireDepthImage()) {
-        backgroundRenderer.updateCameraDepthTexture(depthImage);
+          backgroundRenderer.updateCameraDepthTexture(depthImage);
+          Image.Plane plane = depthImage.getPlanes()[0];
+          int byteIndex = plane.getPixelStride() + plane.getRowStride();
+          ByteBuffer buffer = plane.getBuffer().order(ByteOrder.nativeOrder());
+          short depthSample = buffer.getShort(byteIndex);
+          Log.d("SAVE", "BUFFERFOR: " + depthSample);
       } catch (NotYetAvailableException e) {
         // This normally means that depth data is not available yet. This is normal so we will not
         // spam the logcat with this.
       }
-    }
+    }*/
 
     // Handle one tap per frame.
     handleTap(frame, camera);
@@ -556,7 +590,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Get camera matrix and draw.
     camera.getViewMatrix(viewMatrix, 0);
-
+    Log.d("SAVE", "PROJECTIONFOR: " + Arrays.toString(projectionMatrix));
+    Log.d("SAVE", "VIEWFOR: " + Arrays.toString(viewMatrix));
     // Visualize tracked points.
     // Use try-with-resources to automatically release the point cloud.
     try (PointCloud pointCloud = frame.acquirePointCloud()) {
