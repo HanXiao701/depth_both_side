@@ -27,6 +27,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -99,6 +100,14 @@ import java.util.List;
  * plane to place a 3D model.
  */
 public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
+  // Represents the app's working state.
+  public enum AppState {
+    Idle,
+    Recording
+  }
+
+  // Tracks app's specific state changes.
+  private AppState appState = AppState.Idle;
 
   private static final String TAG = HelloArActivity.class.getSimpleName();
 
@@ -504,7 +513,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // BackgroundRenderer.updateDisplayGeometry must be called every frame to update the coordinates
     // used to draw the background camera image.
     backgroundRenderer.updateDisplayGeometry(frame);
-    /*try (Image depthImageStore = frame.acquireDepthImage()) {
+    try (Image depthImageStore = frame.acquireDepthImage()) {
         Image.Plane plane = depthImageStore.getPlanes()[0];
         int format = depthImageStore.getFormat();
         ByteBuffer buffer = plane.getBuffer().order(ByteOrder.nativeOrder());
@@ -525,22 +534,17 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         e.printStackTrace();
     } catch (IOException e) {
         e.printStackTrace();
-    }*/
-    /*if (camera.getTrackingState() == TrackingState.TRACKING
+    }
+    if (camera.getTrackingState() == TrackingState.TRACKING
         && (depthSettings.useDepthForOcclusion()
             || depthSettings.depthColorVisualizationEnabled())) {
       try (Image depthImage = frame.acquireDepthImage()) {
           backgroundRenderer.updateCameraDepthTexture(depthImage);
-          Image.Plane plane = depthImage.getPlanes()[0];
-          int byteIndex = plane.getPixelStride() + plane.getRowStride();
-          ByteBuffer buffer = plane.getBuffer().order(ByteOrder.nativeOrder());
-          short depthSample = buffer.getShort(byteIndex);
-          Log.d("SAVE", "BUFFERFOR: " + depthSample);
       } catch (NotYetAvailableException e) {
         // This normally means that depth data is not available yet. This is normal so we will not
         // spam the logcat with this.
       }
-    }*/
+    }
 
     // Handle one tap per frame.
     handleTap(frame, camera);
@@ -686,6 +690,57 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         }
       }
     }
+  }
+
+  // Update the "Record" button based on app's internal state.
+  private void updateRecordButton() {
+    View buttonView = findViewById(R.id.record_button);
+    Button button = (Button) buttonView;
+
+    switch (appState) {
+      case Idle:
+        button.setText("Record");
+        break;
+      case Recording:
+        button.setText("Stop");
+        break;
+    }
+  }
+
+  // Handle the "Record" button click event.
+  public void onClickRecord(View view) {
+    Log.d(TAG, "onClickRecord");
+
+    // Check the app's internal state and switch to the new state if needed.
+    switch (appState) {
+      // If the app is not recording, begin recording.
+      case Idle: {
+        boolean hasStarted = startRecording();
+        Log.d(TAG, String.format("onClickRecord start: hasStarted %b", hasStarted));
+
+        if (hasStarted)
+          appState = AppState.Recording;
+
+        break;
+      }
+
+      // If the app is recording, stop recording.
+      case Recording: {
+        boolean hasStopped = stopRecording();
+        Log.d(TAG, String.format("onClickRecord stop: hasStopped %b", hasStopped));
+
+        if (hasStopped)
+          appState = AppState.Idle;
+
+        break;
+      }
+
+      default:
+        // Do nothing.
+        break;
+    }
+
+    updateRecordButton();
   }
 
   /**
