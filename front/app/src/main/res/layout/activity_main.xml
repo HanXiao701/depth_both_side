@@ -14,16 +14,18 @@
    limitations under the License.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:screenOrientation="landscape"
     tools:context="com.google.ar.core.examples.java.augmentedfaces.AugmentedFacesActivity">
 
   <android.opengl.GLSurfaceView
       android:id="@+id/surfaceview"
       android:layout_width="fill_parent"
       android:layout_height="fill_parent"
-      android:layout_gravity="top"/>
+      android:layout_gravity="top" />
 
   <Button
       android:id="@+id/record_button"
@@ -46,5 +48,13 @@
       android:onClick="onClickPlayback"
       android:text="Playback"
       android:textColor="@android:color/holo_green_light" />
+
+  <ImageView
+      android:id="@+id/imageView"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:scaleX="1.5"
+      android:scaleY="1.5"
+      app:srcCompat="?android:attr/listChoiceIndicatorSingle" />
 
 </RelativeLayout>

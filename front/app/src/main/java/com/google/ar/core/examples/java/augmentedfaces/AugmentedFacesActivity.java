@@ -270,9 +270,9 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     try {
       // Create the texture and pass it to ARCore session to be filled during update().
       backgroundRenderer.createOnGlThread(/*context=*/ this);
-      augmentedFaceRenderer.createOnGlThread(this, "models/freckles.png");
+      /*augmentedFaceRenderer.createOnGlThread(this, "models/freckles.png");
       augmentedFaceRenderer.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
-      noseObject.createOnGlThread(/*context=*/ this, "models/nose.obj", "models/nose_fur.png");
+      noseObject.createOnGlThread(*//*context=*//* this, "models/nose.obj", "models/nose_fur.png");
       noseObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
       noseObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
       rightEarObject.createOnGlThread(this, "models/forehead_right.obj", "models/ear_fur.png");
@@ -280,7 +280,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       rightEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
       leftEarObject.createOnGlThread(this, "models/forehead_left.obj", "models/ear_fur.png");
       leftEarObject.setMaterialProperties(0.0f, 1.0f, 0.1f, 6.0f);
-      leftEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
+      leftEarObject.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);*/
 
     } catch (IOException e) {
       Log.e(TAG, "Failed to read an asset file", e);
@@ -366,7 +366,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
         augmentedFaceRenderer.draw(
             projectionMatrix, viewMatrix, modelMatrix, colorCorrectionRgba, face);
 
-        // 2. Next, render the 3D objects attached to the forehead.
+        /*// 2. Next, render the 3D objects attached to the forehead.
         face.getRegionPose(RegionType.FOREHEAD_RIGHT).toMatrix(rightEarMatrix, 0);
         rightEarObject.updateModelMatrix(rightEarMatrix, scaleFactor);
         rightEarObject.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, DEFAULT_COLOR);
@@ -379,7 +379,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
         // to the forehead regions.
         face.getRegionPose(RegionType.NOSE_TIP).toMatrix(noseMatrix, 0);
         noseObject.updateModelMatrix(noseMatrix, scaleFactor);
-        noseObject.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, DEFAULT_COLOR);
+        noseObject.draw(viewMatrix, projectionMatrix, colorCorrectionRgba, DEFAULT_COLOR);*/
       }
     } catch (Throwable t) {
       // Avoid crashing the application due to unhandled exceptions.

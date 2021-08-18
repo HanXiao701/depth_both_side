@@ -216,9 +216,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final String MP4_VIDEO_MIME_TYPE = "video/mp4";
   private final int REQUEST_WRITE_EXTERNAL_STORAGE = 1;
   private int REQUEST_MP4_SELECTOR = 1;
-  private static final UUID ANCHOR_TRACK_ID = UUID.fromString("53069eb5-21ef-4946-b71c-6ac4979216a6");;
-  private static final String ANCHOR_TRACK_MIME_TYPE = "application/recording-playback-anchor";
-
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -548,11 +545,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     }
 
     // Handle one tap per frame.
-    handleTap(frame, camera);
-    // If the app is currently playing back a session, create recorded anchors.
-    if (appState == AppState.Playingback) {
-      createRecordedAnchors(frame, camera);
-    }
+    //handleTap(frame, camera);
 
     // Keep the screen unlocked while tracking, but allow it to lock when tracking stops.
     trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
@@ -602,7 +595,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
 
     // Visualize tracked points.
     // Use try-with-resources to automatically release the point cloud.
-    try (PointCloud pointCloud = frame.acquirePointCloud()) {
+    /*try (PointCloud pointCloud = frame.acquirePointCloud()) {
       if (pointCloud.getTimestamp() > lastPointCloudTimestamp) {
         pointCloudVertexBuffer.set(pointCloud.getPoints());
         lastPointCloudTimestamp = pointCloud.getTimestamp();
@@ -617,7 +610,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
         render,
         session.getAllTrackables(Plane.class),
         camera.getDisplayOrientedPose(),
-        projectionMatrix);
+        projectionMatrix);*/
 
     // -- Draw occluded virtual objects
 
@@ -697,11 +690,6 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             floatBuffer.put(translation);
             floatBuffer.put(quaternion);
 
-            try {
-              frame.recordTrackData(ANCHOR_TRACK_ID, payload);
-            } catch (IllegalStateException e) {
-              Log.e(TAG, "Error in recording anchor into external data track.", e);
-            }
           }
           // For devices that support the Depth API, shows a dialog to suggest enabling
           // depth-based occlusion. This dialog needs to be spawned on the UI thread.
@@ -996,17 +984,11 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     Log.d(TAG, "startRecording at: " + mp4FileUri);
     // Create a new Track, with an ID and MIME tag.
     pauseARCoreSession();
-    // Create a new Track, with an ID and MIME tag.
-    Track anchorTrack = new Track(session)
-            .setId(ANCHOR_TRACK_ID)
-            .setMimeType(ANCHOR_TRACK_MIME_TYPE);
 
     // Configure the ARCore session to start recording.
     RecordingConfig recordingConfig = new RecordingConfig(session)
             .setMp4DatasetUri(mp4FileUri)
-            .setAutoStopOnPause(true)
-            .addTrack(anchorTrack); // add the new track onto the recordingConfig
-
+            .setAutoStopOnPause(true);
     try {
       // Prepare the session for recording, but do not start recording yet.
       session.startRecording(recordingConfig);
@@ -1274,33 +1256,5 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     updatePlaybackButton();
 
     return true;
-  }
-
-  // Extract poses from the ANCHOR_TRACK_ID track, and create new anchors.
-  private void createRecordedAnchors(Frame frame, Camera camera) {
-    // Get all `ANCHOR_TRACK_ID` TrackData from the frame.
-    for (TrackData trackData : frame.getUpdatedTrackData(ANCHOR_TRACK_ID)) {
-      ByteBuffer payload = trackData.getData();
-      FloatBuffer floatBuffer = payload.asFloatBuffer();
-
-      // Extract translation and quaternion from TrackData payload.
-      float[] translation = new float[3];
-      float[] quaternion = new float[4];
-
-      floatBuffer.get(translation);
-      floatBuffer.get(quaternion);
-
-      // Transform the recorded anchor pose
-      // from the camera coordinate
-      // into world coordinates.
-      Pose worldPose = camera.getPose().compose(new Pose(translation, quaternion));
-
-      // Re-create an anchor at the recorded pose.
-      Anchor recordedAnchor = session.createAnchor(worldPose);
-
-      // Add the new anchor into the list of anchors so that
-      // the AR marker can be displayed on top.
-      anchors.add(recordedAnchor);
-    }
   }
 }
