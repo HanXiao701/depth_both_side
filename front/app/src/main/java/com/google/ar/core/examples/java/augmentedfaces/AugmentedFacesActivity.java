@@ -16,11 +16,15 @@
 
 package com.google.ar.core.examples.java.augmentedfaces;
 
+import android.app.Activity;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
+import android.widget.Chronometer;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.ArCoreApk;
@@ -32,6 +36,7 @@ import com.google.ar.core.CameraConfigFilter;
 import com.google.ar.core.Config;
 import com.google.ar.core.Config.AugmentedFaceMode;
 import com.google.ar.core.Frame;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.examples.java.common.helpers.CameraPermissionHelper;
@@ -48,6 +53,8 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -84,7 +91,7 @@ import com.google.ar.core.exceptions.PlaybackFailedException;
  * ARCore API. The application will display any detected planes and will allow the user to tap on a
  * plane to place a 3d model of the Android robot.
  */
-public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfaceView.Renderer {
+public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfaceView.Renderer, Chronometer.OnChronometerTickListener {
   // Represents the app's working state.
   public enum AppState {
     Idle,
@@ -98,6 +105,8 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
 
   // Rendering. The Renderers are created here, and initialized when the GL surface is created.
   private GLSurfaceView surfaceView;
+  private TextView distanceView;
+  private TextView alertView;
 
   private boolean installRequested;
 
@@ -116,17 +125,33 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
   private final float[] rightEarMatrix = new float[16];
   private final float[] leftEarMatrix = new float[16];
   private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
+  private double distance = 0.0;
   private final String MP4_VIDEO_MIME_TYPE = "video/mp4";
   private final int REQUEST_WRITE_EXTERNAL_STORAGE = 1;
   private int REQUEST_MP4_SELECTOR = 1;
   private boolean hasSetTextureNames = false;
+
+  private Chronometer mChronometer;
+  int current = 0;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
+    distanceView = (TextView)findViewById(R.id.distancText);
+    alertView = (TextView)findViewById(R.id.alertView);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+    mChronometer = findViewById(R.id.chronometer);
+
+    //正数计时设置初始值（重置）
+    mChronometer.setBase(0);
+    //正数计时事件监听器，时间发生变化时可进行操作
+    mChronometer.setOnChronometerTickListener(this);
+    //设置格式(默认"MM:SS"格式)
+    mChronometer.setFormat("%s");
+    mChronometer.setText(FormatMiss(current));
+    initData();
 
     // Set up renderer.
     surfaceView.setPreserveEGLContextOnPause(true);
@@ -136,6 +161,9 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     surfaceView.setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
     surfaceView.setWillNotDraw(false);
 
+    distanceView.setVisibility(View.INVISIBLE);
+    alertView.setText((String) this.getResources().getText(R.string.too_far));
+    alertView.setVisibility(View.VISIBLE);
     installRequested = false;
   }
 
@@ -365,6 +393,40 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
         face.getCenterPose().toMatrix(modelMatrix, 0);
         augmentedFaceRenderer.draw(
             projectionMatrix, viewMatrix, modelMatrix, colorCorrectionRgba, face);
+        Pose left = face.getRegionPose(AugmentedFace.RegionType.FOREHEAD_LEFT);
+        Pose right = face.getRegionPose(AugmentedFace.RegionType.FOREHEAD_RIGHT);
+//              face.getm
+        // AugmentedFace node
+//              face.createAnchor(left);
+//              face.createAnchor(right);
+        float lx = left.tx();
+        float ly = left.ty();
+        float lz = left.tz();
+        float rx = right.tx();
+        float ry = right.ty();
+        float rz = right.tz();
+        double llength = Math.sqrt(lx * lx + ly * ly + lz * lz);
+        double rlength = Math.sqrt(rx * rx + ry * ry + rz * rz);
+        BigDecimal b1 = new BigDecimal(llength);
+        BigDecimal r1 = new BigDecimal(rlength);
+        double spec = b1.add(r1).divide(new BigDecimal("2")).multiply(new BigDecimal("100")).floatValue();
+        Log.d("wzz","-----" + llength + "----" + rlength);
+        Log.d("wzz","-----" + b1.add(r1).divide(new BigDecimal("2")));
+        Log.d("wzz","到屏幕距离： " + spec + "cm");
+        DecimalFormat decimalFormat = new DecimalFormat("#.00");
+        distanceView.setText("到屏幕距离： " + decimalFormat.format(spec) + "cm\n请将脸部置与框内，并保持距离在45厘米左右");
+        if (spec < 35){
+          alertView.setText((String) this.getResources().getText(R.string.too_close));
+          alertView.setVisibility(View.VISIBLE);
+        }else if(spec > 55){
+          alertView.setText((String) this.getResources().getText(R.string.too_far));
+          alertView.setVisibility(View.VISIBLE);
+        }else {
+          alertView.setText((String) this.getResources().getText(R.string.keep));
+          alertView.setVisibility(View.VISIBLE);
+        }
+/*        Log.d("wzz","-----" + decimalFormat.format((b1.add(r1).divide(new BigDecimal("2")))) + "m");
+        mTv.setText("到屏幕距离： " + decimalFormat.format(spec) + "cm");*/
 
         /*// 2. Next, render the 3D objects attached to the forehead.
         face.getRegionPose(RegionType.FOREHEAD_RIGHT).toMatrix(rightEarMatrix, 0);
@@ -463,6 +525,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     switch (appState) {
       // If the app is not recording, begin recording.
       case Idle: {
+        distanceView.setVisibility(View.VISIBLE);
         boolean hasStarted = startRecording();
         Log.d(TAG, String.format("onClickRecord start: hasStarted %b", hasStarted));
 
@@ -474,6 +537,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
 
       // If the app is recording, stop recording.
       case Recording: {
+        distanceView.setVisibility(View.INVISIBLE);
         boolean hasStopped = stopRecording();
         Log.d(TAG, String.format("onClickRecord stop: hasStopped %b", hasStopped));
 
@@ -551,6 +615,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     // Correctness checking: check the ARCore session's RecordingState.
     RecordingStatus recordingStatus = session.getRecordingStatus();
     Log.d(TAG, String.format("startRecording - recordingStatus %s", recordingStatus));
+    mChronometer.start();
     return recordingStatus == RecordingStatus.OK;
   }
 
@@ -585,7 +650,9 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
       Log.e(TAG, "stopRecording - Failed to stop recording", e);
       return false;
     }
-
+    mChronometer.stop();
+    mChronometer.setBase(SystemClock.elapsedRealtime());
+    current = 0;
     // Correctness checking: check if the session stopped recording.
     return session.getRecordingStatus() == RecordingStatus.NONE;
   }
@@ -683,7 +750,6 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     intent.addCategory(Intent.CATEGORY_OPENABLE); // Must be files that can be opened
 
     this.startActivityForResult(intent, REQUEST_MP4_SELECTOR);
-
     return true;
   }
 
@@ -691,7 +757,8 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     // Check request status. Log an error if the selection fails.
-    if (resultCode != android.app.Activity.RESULT_OK || requestCode != REQUEST_MP4_SELECTOR) {
+    super.onActivityResult(requestCode, resultCode, data);
+    if (resultCode != Activity.RESULT_OK || requestCode != REQUEST_MP4_SELECTOR) {
       Log.e(TAG, "onActivityResult select file failed");
       return;
     }
@@ -738,7 +805,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     appState = AppState.Playingback;
     updateRecordButton();
     updatePlaybackButton();
-
+    mChronometer.start();
     return true;
   }
 
@@ -775,7 +842,33 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     appState = AppState.Idle;
     updateRecordButton();
     updatePlaybackButton();
-
+    mChronometer.stop();
+    mChronometer.setBase(SystemClock.elapsedRealtime());
+    current = 0;
     return true;
+  }
+
+  //正数计时
+  private void initData() {
+    mChronometer.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
+      @Override
+      public void onChronometerTick(Chronometer chronometer) {
+        current++;
+        chronometer.setText(FormatMiss(current));
+      }
+    });
+  }
+
+  @Override
+  public void onChronometerTick(Chronometer chronometer) {
+
+  }
+
+  //正数计时显示格式
+  public static String FormatMiss(int time) {
+    String hh = time / 3600 > 9 ? time / 3600 + "" : "0" + time / 3600;
+    String mm = (time % 3600) / 60 > 9 ? (time % 3600) / 60 + "" : "0" + (time % 3600) / 60;
+    String ss = (time % 3600) % 60 > 9 ? (time % 3600) % 60 + "" : "0" + (time % 3600) % 60;
+    return hh + ":" + mm + ":" + ss;
   }
 }

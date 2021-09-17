@@ -27,13 +27,43 @@
       android:layout_height="fill_parent"
       android:layout_gravity="top" />
 
+  <TextView
+      android:id="@+id/distancText"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_alignParentBottom="true"
+      android:layout_marginStart="10dp"
+      android:layout_marginEnd="10dp"
+      android:layout_toStartOf="@+id/playback_button"
+      android:layout_toEndOf="@+id/record_button"
+      android:gravity="center_horizontal"
+      android:text="@string/distance_text"
+      android:textColor="@color/design_default_color_on_secondary" />
+
+  <TextView
+      android:id="@+id/alertView"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:gravity="center_horizontal"
+      android:text="@string/too_close"
+      android:textColor="@color/design_default_color_error"
+      android:textSize="24sp"
+      android:visibility="visible" />
+
+  <Chronometer
+      android:id="@+id/chronometer"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:layout_below="@+id/alertView"
+      android:layout_marginTop="0dp"
+      android:gravity="center" />
+
   <Button
       android:id="@+id/record_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
       android:layout_alignLeft="@id/surfaceview"
       android:layout_alignBottom="@id/surfaceview"
-      android:layout_marginBottom="100dp"
       android:onClick="onClickRecord"
       android:text="Record"
       android:textColor="@android:color/holo_red_light" />
@@ -44,7 +74,6 @@
       android:layout_height="wrap_content"
       android:layout_alignEnd="@id/surfaceview"
       android:layout_alignBottom="@id/surfaceview"
-      android:layout_marginBottom="100dp"
       android:onClick="onClickPlayback"
       android:text="Playback"
       android:textColor="@android:color/holo_green_light" />
@@ -53,8 +82,8 @@
       android:id="@+id/imageView"
       android:layout_width="match_parent"
       android:layout_height="match_parent"
-      android:scaleX="1.5"
-      android:scaleY="1.5"
+      android:scaleX="1.2"
+      android:scaleY="1.2"
       app:srcCompat="?android:attr/listChoiceIndicatorSingle" />
 
 </RelativeLayout>

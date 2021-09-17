@@ -24,10 +24,12 @@ import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Chronometer;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -118,7 +120,7 @@ import com.google.ar.core.TrackData;
  * ARCore API. The application will display any detected planes and will allow the user to tap on a
  * plane to place a 3D model.
  */
-public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer {
+public class HelloArActivity extends AppCompatActivity implements SampleRender.Renderer, Chronometer.OnChronometerTickListener {
 
   // Represents the app's working state.
   public enum AppState {
@@ -216,6 +218,8 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   private final String MP4_VIDEO_MIME_TYPE = "video/mp4";
   private final int REQUEST_WRITE_EXTERNAL_STORAGE = 1;
   private int REQUEST_MP4_SELECTOR = 1;
+  private Chronometer mChronometer;
+  int current = 0;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -223,6 +227,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     setContentView(R.layout.activity_main);
     surfaceView = findViewById(R.id.surfaceview);
     displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
+    mChronometer = findViewById(R.id.chronometer);
 
     // Set up touch listener.
     tapHelper = new TapHelper(/*context=*/ this);
@@ -246,6 +251,15 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
             popup.show();
           }
         });
+
+    //正数计时设置初始值（重置）
+    mChronometer.setBase(0);
+    //正数计时事件监听器，时间发生变化时可进行操作
+    mChronometer.setOnChronometerTickListener(this);
+    //设置格式(默认"MM:SS"格式)
+    mChronometer.setFormat("%s");
+    mChronometer.setText(FormatMiss(current));
+    initData();
   }
 
   /** Menu button to launch feature specific settings. */
@@ -1004,6 +1018,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     // Correctness checking: check the ARCore session's RecordingState.
     RecordingStatus recordingStatus = session.getRecordingStatus();
     Log.d(TAG, String.format("startRecording - recordingStatus %s", recordingStatus));
+    mChronometer.start();
     return recordingStatus == RecordingStatus.OK;
   }
 
@@ -1038,7 +1053,9 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
       Log.e(TAG, "stopRecording - Failed to stop recording", e);
       return false;
     }
-
+    mChronometer.stop();
+    mChronometer.setBase(SystemClock.elapsedRealtime());
+    current = 0;
     // Correctness checking: check if the session stopped recording.
     return session.getRecordingStatus() == RecordingStatus.NONE;
   }
@@ -1170,6 +1187,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     // Check request status. Log an error if the selection fails.
+    super.onActivityResult(requestCode, resultCode, data);
     if (resultCode != Activity.RESULT_OK || requestCode != REQUEST_MP4_SELECTOR) {
       Log.e(TAG, "onActivityResult select file failed");
       return;
@@ -1217,7 +1235,7 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     appState = AppState.Playingback;
     updateRecordButton();
     updatePlaybackButton();
-
+    mChronometer.start();
     return true;
   }
 
@@ -1254,7 +1272,33 @@ public class HelloArActivity extends AppCompatActivity implements SampleRender.R
     appState = AppState.Idle;
     updateRecordButton();
     updatePlaybackButton();
-
+    mChronometer.stop();
+    mChronometer.setBase(SystemClock.elapsedRealtime());
+    current = 0;
     return true;
+  }
+
+  //正数计时
+  private void initData() {
+    mChronometer.setOnChronometerTickListener(new Chronometer.OnChronometerTickListener() {
+      @Override
+      public void onChronometerTick(Chronometer chronometer) {
+        current++;
+        chronometer.setText(FormatMiss(current));
+      }
+    });
+  }
+
+  @Override
+  public void onChronometerTick(Chronometer chronometer) {
+
+  }
+
+  //正数计时显示格式
+  public static String FormatMiss(int time) {
+    String hh = time / 3600 > 9 ? time / 3600 + "" : "0" + time / 3600;
+    String mm = (time % 3600) / 60 > 9 ? (time % 3600) / 60 + "" : "0" + (time % 3600) / 60;
+    String ss = (time % 3600) % 60 > 9 ? (time % 3600) % 60 + "" : "0" + (time % 3600) % 60;
+    return hh + ":" + mm + ":" + ss;
   }
 }
