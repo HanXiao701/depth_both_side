@@ -17,6 +17,7 @@
 package com.google.ar.core.examples.java.augmentedfaces;
 
 import android.app.Activity;
+import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
@@ -53,6 +54,7 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.Collection;
@@ -413,6 +415,7 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
         Log.d("wzz","-----" + llength + "----" + rlength);
         Log.d("wzz","-----" + b1.add(r1).divide(new BigDecimal("2")));
         Log.d("wzz","到屏幕距离： " + spec + "cm");
+        writeToFile("到屏幕距离： " + spec + "cm", this);
         DecimalFormat decimalFormat = new DecimalFormat("#.00");
         distanceView.setText("到屏幕距离： " + decimalFormat.format(spec) + "cm\n请将脸部置与框内，并保持距离在45厘米左右");
         if (spec < 35){
@@ -870,5 +873,17 @@ public class AugmentedFacesActivity extends AppCompatActivity implements GLSurfa
     String mm = (time % 3600) / 60 > 9 ? (time % 3600) / 60 + "" : "0" + (time % 3600) / 60;
     String ss = (time % 3600) % 60 > 9 ? (time % 3600) % 60 + "" : "0" + (time % 3600) % 60;
     return hh + ":" + mm + ":" + ss;
+  }
+
+  private void writeToFile(String data, Context context) {
+    try {
+      Log.d(TAG, "SUCSSES! " + data);
+      OutputStreamWriter outputStreamWriter = new OutputStreamWriter(context.openFileOutput("config.txt", Context.MODE_PRIVATE));
+      outputStreamWriter.write(data);
+      outputStreamWriter.close();
+    }
+    catch (IOException e) {
+      Log.e("Exception", "File write failed: " + e.toString());
+    }
   }
 }
