@@ -1,0 +1,9 @@
+opencv-python
+matplotlib
+numpy
+youtube_dl
+ipywidgets
+pandas
+scipy
+plotly
+ipyplot
